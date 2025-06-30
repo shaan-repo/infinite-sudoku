@@ -18,6 +18,9 @@ const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCel
   const getHighlightedCells = (): Set<string> => {
     const highlightedCells = new Set<string>();
     
+    // Don't show blue highlighting if there are any conflicts
+    if (conflicts.size > 0) return highlightedCells;
+    
     if (!selectedCell) return highlightedCells;
     
     const { row, col } = selectedCell;
@@ -32,22 +35,38 @@ const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCel
       highlightedCells.add(`${i}-${col}`); // Column
     }
     
+    return highlightedCells;
+  };
+
+  // Calculate which cells have the same number as selected cell
+  const getSameNumberCells = (): Set<string> => {
+    const sameNumberCells = new Set<string>();
+    
+    if (!selectedCell) return sameNumberCells;
+    
+    const { row, col } = selectedCell;
+    const selectedValue = grid[row][col];
+    
+    // Only highlight same numbers if the selected cell has a number (is filled)
+    if (selectedValue === 0) return sameNumberCells;
+    
     // Highlight all cells with the same number
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         if (grid[r][c] === selectedValue) {
-          highlightedCells.add(`${r}-${c}`);
+          sameNumberCells.add(`${r}-${c}`);
         }
       }
     }
     
-    return highlightedCells;
+    return sameNumberCells;
   };
 
   const highlightedCells = getHighlightedCells();
+  const sameNumberCells = getSameNumberCells();
 
   return (
-    <div className="grid grid-cols-9 gap-0 border-4 border-slate-700 rounded-lg overflow-hidden bg-white shadow-inner">
+    <div className="grid grid-cols-9 gap-0 border-4 border-slate-500 rounded-lg overflow-hidden bg-white shadow-inner">
       {grid.map((row, rowIndex) =>
         row.map((cell, colIndex) => {
           // Calculate border classes for 3x3 grid and cell separation
@@ -67,6 +86,7 @@ const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCel
               isInitialSelected={isSelected && isInitial}
               isConflicted={conflicts.has(`${rowIndex}-${colIndex}`)}
               isHighlighted={highlightedCells.has(`${rowIndex}-${colIndex}`)}
+              isSameNumber={sameNumberCells.has(`${rowIndex}-${colIndex}`)}
               isInitial={isInitial}
               onClick={() => handleCellClick(rowIndex, colIndex)}
               borderClass={borderClass}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Board from './components/Board';
 import Modal from './components/Modal';
+import VictoryModal from './components/VictoryModal';
 
 type Grid = number[][];
 type CellPosition = { row: number; col: number } | null;
@@ -16,6 +17,8 @@ function App() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [mistakes, setMistakes] = useState<number>(0);
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
   // Check for conflicts in current grid state
   const findConflicts = (grid: Grid): Set<string> => {
@@ -176,43 +179,68 @@ function App() {
     setGrid(puzzle);
     setInitialGrid(puzzle.map(row => [...row]));
     setIsComplete(false);
+    setIsGameOver(false);
     setSelectedCell(null);
     setConflicts(new Set());
+    setMistakes(0);
     setStartTime(Date.now());
     setElapsedTime(0);
     setIsPaused(false);
   }, [difficulty]);
 
+  const startNewGame = () => {
+    setIsComplete(false);
+    setSelectedCell(null);
+    setConflicts(new Set());
+    setMistakes(0);
+    setStartTime(null);
+    setElapsedTime(0);
+    setIsPaused(false);
+    setIsGameOver(false);
+  };
+
   const handleCellClick = (row: number, col: number) => {
-    if (!isPaused) {
+    if (!isPaused && !isGameOver) {
       setSelectedCell({ row, col });
     }
   };
 
   const handleNumberInput = (num: number) => {
-    if (selectedCell && !isComplete && !isPaused) {
+    if (selectedCell && !isComplete && !isPaused && !isGameOver) {
       const { row, col } = selectedCell;
       if (initialGrid[row][col] === 0) {
         const newGrid = [...grid];
         newGrid[row][col] = num;
         setGrid(newGrid);
         
-        // Update conflicts
+        // Check if this creates a conflict (mistake)
         const newConflicts = findConflicts(newGrid);
+        const hadConflict = conflicts.has(`${row}-${col}`);
+        const hasConflict = newConflicts.has(`${row}-${col}`);
+        
+        // If this cell now has a conflict and didn't before, it's a new mistake
+        if (hasConflict && !hadConflict) {
+          const newMistakeCount = mistakes + 1;
+          setMistakes(newMistakeCount);
+          
+          // Check if game over
+          if (newMistakeCount >= 3) {
+            setIsGameOver(true);
+          }
+        }
+        
         setConflicts(newConflicts);
         
-        // Check if puzzle is complete (no conflicts and no empty cells)
-        const isGridComplete = newGrid.every(row => row.every(cell => cell !== 0));
-        if (isGridComplete && newConflicts.size === 0) {
+        // Check if puzzle is complete
+        if (newConflicts.size === 0 && newGrid.every(row => row.every(cell => cell !== 0))) {
           setIsComplete(true);
-          setSelectedCell(null);
         }
       }
     }
   };
 
   const clearCell = () => {
-    if (selectedCell && !isComplete && !isPaused) {
+    if (selectedCell && !isComplete && !isPaused && !isGameOver) {
       const { row, col } = selectedCell;
       if (initialGrid[row][col] === 0) {
         const newGrid = [...grid];
@@ -227,13 +255,22 @@ function App() {
   };
 
   const togglePause = () => {
-    setIsPaused((prev) => {
-      if (prev) {
-        // Resuming - adjust start time to account for paused duration
-        setStartTime(Date.now() - elapsedTime * 1000);
+    if (!isComplete && !isGameOver) {
+      setIsPaused(!isPaused);
+    }
+  };
+
+  // Check if all instances of a number are correctly placed
+  const isNumberComplete = (num: number): boolean => {
+    let count = 0;
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        if (grid[row][col] === num) {
+          count++;
+        }
       }
-      return !prev;
-    });
+    }
+    return count === 9;
   };
 
   const formatTime = (seconds: number): string => {
@@ -275,24 +312,26 @@ function App() {
   }, [startTime, isPaused, isComplete]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 flex flex-col items-center justify-center p-4">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-slate-800 mb-2">Infinite Sudoku</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2 bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700 bg-clip-text text-transparent drop-shadow-sm">
+            Infinite Sudoku
+          </h1>
           
           <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="text-2xl font-mono text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
+            <div className="text-2xl font-mono font-medium text-slate-600 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-blue-100">
               {formatTime(elapsedTime)}
             </div>
             <button
               onClick={togglePause}
-              disabled={isComplete}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center text-xl ${
-                isComplete 
+              disabled={isComplete || isGameOver}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center text-xl ${
+                isComplete || isGameOver
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : isPaused
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  ? 'bg-blue-400 text-white hover:bg-blue-500 shadow-md hover:shadow-lg'
+                  : 'bg-slate-200/80 text-slate-600 hover:bg-slate-300/80 hover:shadow-md'
               }`}
             >
               {isPaused ? (
@@ -315,22 +354,27 @@ function App() {
               <button
                 key={level}
                 onClick={() => setDifficulty(level as Difficulty)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-300 ${
                   difficulty === level
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-blue-400 text-white shadow-md hover:shadow-lg'
+                    : 'bg-white/60 text-slate-600 hover:bg-white/80 hover:shadow-sm border border-blue-100'
                 }`}
               >
                 {level}
               </button>
             ))}
           </div>
-          <button
-            onClick={newGame}
-            className="bg-slate-800 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-colors"
-          >
-            New Game
-          </button>
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <button
+              onClick={newGame}
+              className="bg-slate-600 text-white px-6 py-2 rounded-full font-medium hover:bg-slate-700 transition-all duration-300 shadow-md hover:shadow-lg"
+            >
+              New Game
+            </button>
+            <div className="text-sm font-medium text-rose-700 bg-rose-50/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-rose-200">
+              Mistakes: {mistakes}/3
+            </div>
+          </div>
         </div>
 
         <div className="relative mb-8">
@@ -341,14 +385,12 @@ function App() {
             selectedCell={selectedCell}
             handleCellClick={handleCellClick}
           />
-          <Modal open={isComplete} onClose={() => {}}>
-            <div className="text-center">
-              <div className="text-4xl mb-2">🎉</div>
-              <div className="text-xl font-medium text-slate-800 mb-2">Congratulations!</div>
-              <div className="text-slate-600 mb-2">Puzzle completed!</div>
-              <div className="text-lg font-mono text-blue-600">Final time: {formatTime(elapsedTime)}</div>
-            </div>
-          </Modal>
+          <VictoryModal
+            open={isComplete}
+            onClose={startNewGame}
+            difficulty={difficulty}
+            time={formatTime(elapsedTime)}
+          />
           <Modal
             open={isPaused && !isComplete}
             onClose={togglePause}
@@ -360,34 +402,55 @@ function App() {
             }
           >
             <div className="text-center">
-              <div className="text-lg font-medium text-slate-800 mb-1">Game Paused</div>
+              <div className="text-lg font-medium text-slate-700 mb-1">Game Paused</div>
               <div className="text-sm text-slate-600">No Cheating!</div>
+            </div>
+          </Modal>
+          <Modal
+            open={isGameOver}
+            onClose={startNewGame}
+            buttonText="New Game"
+            buttonIcon={
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M12 2v3M12 19v3M5 12H2M21 12h3M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636M18.364 5.636l-1.414 1.414M7.05 16.95L5.636 18.364"/>
+              </svg>
+            }
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-2">💥</div>
+              <div className="text-lg font-medium text-slate-700 mb-1">Game Over!</div>
+              <div className="text-sm text-slate-600">Too many mistakes. Better luck next time!</div>
             </div>
           </Modal>
         </div>
 
         <div className="grid grid-cols-5 gap-2">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-            <button
-              key={num}
-              onClick={() => handleNumberInput(num)}
-              disabled={isPaused || isComplete}
-              className={`aspect-square font-medium rounded-lg transition-colors ${
-                isPaused || isComplete
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
-            >
-              {num}
-            </button>
-          ))}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
+            const isComplete = isNumberComplete(num);
+            return (
+              <button
+                key={num}
+                onClick={() => handleNumberInput(num)}
+                disabled={isPaused || isComplete || isGameOver}
+                className={`aspect-square font-medium rounded-lg transition-all duration-300 ${
+                  isPaused || isComplete || isGameOver
+                    ? 'bg-slate-200/60 text-slate-400 cursor-not-allowed'
+                    : isComplete
+                    ? 'bg-gradient-to-br from-blue-200/80 to-blue-300/60 text-blue-700/70 backdrop-blur-sm border border-blue-200/60 cursor-not-allowed'
+                    : 'bg-white/60 hover:bg-white/80 text-slate-700 hover:shadow-md border border-blue-100'
+                }`}
+              >
+                {num}
+              </button>
+            );
+          })}
           <button
             onClick={clearCell}
-            disabled={isPaused || isComplete}
-            className={`aspect-square font-medium rounded-lg transition-colors ${
-              isPaused || isComplete
-                ? 'bg-red-50 text-red-300 cursor-not-allowed'
-                : 'bg-red-100 hover:bg-red-200 text-red-600'
+            disabled={isPaused || isComplete || isGameOver}
+            className={`aspect-square font-medium rounded-lg transition-all duration-300 ${
+              isPaused || isComplete || isGameOver
+                ? 'bg-blue-50/60 text-blue-300 cursor-not-allowed'
+                : 'bg-blue-100/80 hover:bg-blue-200/80 text-blue-600 hover:shadow-md border border-blue-200'
             }`}
           >
             ×
