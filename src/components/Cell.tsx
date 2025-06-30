@@ -3,14 +3,16 @@ import React from 'react';
 interface CellProps {
   value: number;
   isSelected: boolean;
+  isInitialSelected: boolean;
   isConflicted: boolean;
   isInitial: boolean;
+  isHighlighted: boolean;
   onClick: () => void;
   borderClass?: string;
   children?: React.ReactNode;
 }
 
-const Cell: React.FC<CellProps> = ({ value, isSelected, isConflicted, isInitial, onClick, borderClass = '', children }) => {
+const Cell: React.FC<CellProps> = ({ value, isSelected, isInitialSelected, isConflicted, isHighlighted, isInitial, onClick, borderClass = '', children }) => {
   return (
     <div
       onClick={onClick}
@@ -22,6 +24,10 @@ const Cell: React.FC<CellProps> = ({ value, isSelected, isConflicted, isInitial,
           ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
           : isSelected
           ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset'
+          : isInitialSelected
+          ? 'ring-2 ring-black ring-inset'
+          : isHighlighted
+          ? 'bg-blue-100'
           : isInitial
           ? 'bg-slate-50 text-slate-800'
           : value !== 0

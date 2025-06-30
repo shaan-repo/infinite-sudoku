@@ -184,7 +184,7 @@ function App() {
   }, [difficulty]);
 
   const handleCellClick = (row: number, col: number) => {
-    if (initialGrid[row][col] === 0 && !isPaused) {
+    if (!isPaused) {
       setSelectedCell({ row, col });
     }
   };
@@ -227,11 +227,13 @@ function App() {
   };
 
   const togglePause = () => {
-    setIsPaused(!isPaused);
-    if (isPaused) {
-      // Resuming - adjust start time to account for paused duration
-      setStartTime(Date.now() - elapsedTime);
-    }
+    setIsPaused((prev) => {
+      if (prev) {
+        // Resuming - adjust start time to account for paused duration
+        setStartTime(Date.now() - elapsedTime * 1000);
+      }
+      return !prev;
+    });
   };
 
   const formatTime = (seconds: number): string => {
@@ -276,7 +278,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-slate-800 mb-2">Sudoku</h1>
+          <h1 className="text-3xl font-light text-slate-800 mb-2">Infinite Sudoku</h1>
           
           <div className="flex items-center justify-center gap-4 mb-4">
             <div className="text-2xl font-mono text-slate-700 bg-slate-100 px-4 py-2 rounded-lg">
@@ -285,15 +287,26 @@ function App() {
             <button
               onClick={togglePause}
               disabled={isComplete}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center text-xl ${
                 isComplete 
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                   : isPaused
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : 'bg-amber-500 text-white hover:bg-amber-600'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
               }`}
             >
-              {isPaused ? '▶' : '⏸'}
+              {isPaused ? (
+                // Play SVG
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                  <polygon points="6,4 20,12 6,20" />
+                </svg>
+              ) : (
+                // Pause SVG
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              )}
             </button>
           </div>
           
@@ -336,11 +349,19 @@ function App() {
               <div className="text-lg font-mono text-blue-600">Final time: {formatTime(elapsedTime)}</div>
             </div>
           </Modal>
-          <Modal open={isPaused && !isComplete} onClose={togglePause}>
+          <Modal
+            open={isPaused && !isComplete}
+            onClose={togglePause}
+            buttonText="Resume"
+            buttonIcon={
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <polygon points="6,4 20,12 6,20" />
+              </svg>
+            }
+          >
             <div className="text-center">
-              <div className="text-4xl mb-4">⏸️</div>
-              <div className="text-xl font-medium text-slate-800 mb-2">Game Paused</div>
-              <div className="text-slate-600">Click resume to continue</div>
+              <div className="text-lg font-medium text-slate-800 mb-1">Game Paused</div>
+              <div className="text-sm text-slate-600">No Cheating!</div>
             </div>
           </Modal>
         </div>
