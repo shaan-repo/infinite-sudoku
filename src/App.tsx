@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import Board from './components/Board';
+import Modal from './components/Modal';
 
 type Grid = number[][];
 type CellPosition = { row: number; col: number } | null;
@@ -319,59 +321,28 @@ function App() {
         </div>
 
         <div className="relative mb-8">
-          <div className="grid grid-cols-9 gap-0 border-2 border-slate-300 rounded-lg overflow-hidden bg-white shadow-inner">
-            {grid.map((row, rowIndex) =>
-              row.map((cell, colIndex) => (
-                <div
-                  key={`${rowIndex}-${colIndex}`}
-                  onClick={() => handleCellClick(rowIndex, colIndex)}
-                  className={`
-                    aspect-square flex items-center justify-center text-lg font-medium cursor-pointer
-                    transition-all duration-200 relative
-                    ${(rowIndex + 1) % 3 === 0 && rowIndex !== 8 ? 'border-b-2 border-slate-300' : 'border-b border-slate-200'}
-                    ${(colIndex + 1) % 3 === 0 && colIndex !== 8 ? 'border-r-2 border-slate-300' : 'border-r border-slate-200'}
-                    ${conflicts.has(`${rowIndex}-${colIndex}`)
-                      ? 'bg-red-100 text-red-700 ring-1 ring-red-300'
-                      : selectedCell?.row === rowIndex && selectedCell?.col === colIndex
-                      ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset'
-                      : initialGrid[rowIndex][colIndex] !== 0
-                      ? 'bg-slate-50 text-slate-800'
-                      : cell !== 0
-                      ? 'bg-white text-blue-600 hover:bg-blue-50'
-                      : 'bg-white hover:bg-slate-50'
-                    }
-                  `}
-                >
-                  {cell !== 0 && (
-                    <span className={initialGrid[rowIndex][colIndex] !== 0 ? 'font-bold' : ''}>
-                      {cell}
-                    </span>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-          
-          {isComplete && (
-            <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-4xl mb-2">🎉</div>
-                <div className="text-xl font-medium text-slate-800 mb-2">Congratulations!</div>
-                <div className="text-slate-600 mb-2">Puzzle completed!</div>
-                <div className="text-lg font-mono text-blue-600">Final time: {formatTime(elapsedTime)}</div>
-              </div>
+          <Board
+            grid={grid}
+            initialGrid={initialGrid}
+            conflicts={conflicts}
+            selectedCell={selectedCell}
+            handleCellClick={handleCellClick}
+          />
+          <Modal open={isComplete} onClose={() => {}}>
+            <div className="text-center">
+              <div className="text-4xl mb-2">🎉</div>
+              <div className="text-xl font-medium text-slate-800 mb-2">Congratulations!</div>
+              <div className="text-slate-600 mb-2">Puzzle completed!</div>
+              <div className="text-lg font-mono text-blue-600">Final time: {formatTime(elapsedTime)}</div>
             </div>
-          )}
-          
-          {isPaused && !isComplete && (
-            <div className="absolute inset-0 bg-white bg-opacity-95 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-4xl mb-4">⏸️</div>
-                <div className="text-xl font-medium text-slate-800 mb-2">Game Paused</div>
-                <div className="text-slate-600">Click resume to continue</div>
-              </div>
+          </Modal>
+          <Modal open={isPaused && !isComplete} onClose={togglePause}>
+            <div className="text-center">
+              <div className="text-4xl mb-4">⏸️</div>
+              <div className="text-xl font-medium text-slate-800 mb-2">Game Paused</div>
+              <div className="text-slate-600">Click resume to continue</div>
             </div>
-          )}
+          </Modal>
         </div>
 
         <div className="grid grid-cols-5 gap-2">
