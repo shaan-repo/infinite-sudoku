@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Board from './components/Board';
 import Modal from './components/Modal';
 import VictoryModal from './components/VictoryModal';
+import WelcomeModal from './components/WelcomeModal';
+import { preGeneratedPuzzles, arrayToGrid } from './data/puzzles';
 
 type Grid = number[][];
 type CellPosition = { row: number; col: number } | null;
@@ -19,6 +21,8 @@ function App() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [mistakes, setMistakes] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [pauseStartTime, setPauseStartTime] = useState<number | null>(null);
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
 
   // Check for conflicts in current grid state
   const findConflicts = (grid: Grid): Set<string> => {
@@ -136,16 +140,78 @@ function App() {
     return grid;
   };
 
+  // Check if puzzle has exactly one unique solution
+  const hasUniqueSolution = (grid: Grid): boolean => {
+    let solutionCount = 0;
+    
+    const countSolutions = (currentGrid: Grid): void => {
+      // Find first empty cell
+      let emptyCell = null;
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (currentGrid[row][col] === 0) {
+            emptyCell = { row, col };
+            break;
+          }
+        }
+        if (emptyCell) break;
+      }
+      
+      // If no empty cells, we found a solution
+      if (!emptyCell) {
+        solutionCount++;
+        return;
+      }
+      
+      // Try each number in the empty cell
+      for (let num = 1; num <= 9; num++) {
+        if (isValid(currentGrid, emptyCell.row, emptyCell.col, num)) {
+          const newGrid = currentGrid.map(row => [...row]);
+          newGrid[emptyCell.row][emptyCell.col] = num;
+          countSolutions(newGrid);
+          
+          // Early termination if we found more than one solution
+          if (solutionCount > 1) return;
+        }
+      }
+    };
+    
+    countSolutions(grid);
+    return solutionCount === 1;
+  };
+
+  // Get a random pre-generated puzzle for hard/extreme difficulties
+  const getRandomPreGeneratedPuzzle = (difficulty: Difficulty): { puzzle: Grid; solution: Grid } | null => {
+    const availablePuzzles = preGeneratedPuzzles.filter(p => p[0] === difficulty);
+    if (availablePuzzles.length === 0) return null;
+    
+    const randomPuzzle = availablePuzzles[Math.floor(Math.random() * availablePuzzles.length)];
+    return {
+      puzzle: arrayToGrid(randomPuzzle[1] as number[]),
+      solution: arrayToGrid(randomPuzzle[2] as number[])
+    };
+  };
+
   // Generate puzzle by removing numbers
   const generatePuzzle = (difficulty: Difficulty): { puzzle: Grid; solution: Grid } => {
+    // Use pre-generated puzzles for hard and extreme difficulties
+    if (difficulty === 'hard' || difficulty === 'extreme') {
+      const preGenerated = getRandomPreGeneratedPuzzle(difficulty);
+      if (preGenerated) {
+        return preGenerated;
+      }
+      // Fallback to generation if no pre-generated puzzles available
+    }
+    
+    // Generate puzzles for easy and medium difficulties
     const complete = generateComplete();
     const puzzle = complete.map(row => [...row]);
     
     const difficultyMap: Record<Difficulty, number> = {
       easy: 35,
       medium: 45,
-      hard: 55,
-      extreme: 65
+      hard: 50,
+      extreme: 58
     };
     
     const cellsToRemove = difficultyMap[difficulty];
@@ -163,7 +229,7 @@ function App() {
         const testGrid = puzzle.map(row => [...row]);
         const solved = solveSudoku(testGrid);
         
-        if (solved) {
+        if (solved && hasUniqueSolution(testGrid)) {
           removed++;
         } else {
           puzzle[row][col] = backup;
@@ -186,6 +252,7 @@ function App() {
     setStartTime(Date.now());
     setElapsedTime(0);
     setIsPaused(false);
+    setPauseStartTime(null);
   }, [difficulty]);
 
   const startNewGame = () => {
@@ -197,6 +264,11 @@ function App() {
     setElapsedTime(0);
     setIsPaused(false);
     setIsGameOver(false);
+    setPauseStartTime(null);
+    // Clear the grid to prevent any interaction with old game state
+    setGrid(Array(9).fill(null).map(() => Array(9).fill(0)));
+    setInitialGrid(Array(9).fill(null).map(() => Array(9).fill(0)));
+    setShowWelcome(false);
   };
 
   const handleCellClick = (row: number, col: number) => {
@@ -256,6 +328,17 @@ function App() {
 
   const togglePause = () => {
     if (!isComplete && !isGameOver) {
+      if (isPaused) {
+        // Resuming - adjust start time to account for paused duration
+        if (pauseStartTime && startTime) {
+          const pauseDuration = Date.now() - pauseStartTime;
+          setStartTime(startTime + pauseDuration);
+        }
+        setPauseStartTime(null);
+      } else {
+        // Pausing - record when pause started
+        setPauseStartTime(Date.now());
+      }
       setIsPaused(!isPaused);
     }
   };
@@ -281,7 +364,7 @@ function App() {
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (!isPaused) {
+      if (!isPaused && !isGameOver) {
         if (e.key >= '1' && e.key <= '9') {
           handleNumberInput(parseInt(e.key));
         } else if (e.key === 'Backspace' || e.key === 'Delete') {
@@ -292,7 +375,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedCell, isComplete, isPaused]);
+  }, [selectedCell, isComplete, isPaused, isGameOver]);
 
   // Timer effect
   useEffect(() => {
@@ -410,18 +493,22 @@ function App() {
             open={isGameOver}
             onClose={startNewGame}
             buttonText="New Game"
-            buttonIcon={
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M12 2v3M12 19v3M5 12H2M21 12h3M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636M18.364 5.636l-1.414 1.414M7.05 16.95L5.636 18.364"/>
-              </svg>
-            }
           >
             <div className="text-center">
-              <div className="text-4xl mb-2">💥</div>
-              <div className="text-lg font-medium text-slate-700 mb-1">Game Over!</div>
-              <div className="text-sm text-slate-600">Too many mistakes. Better luck next time!</div>
+              <div className="text-4xl mb-2">🫵🏽😹</div>
+              <div className="text-lg font-medium text-slate-700 mb-1">Are you even trying!?</div>
+              <div className="text-sm text-slate-600">
+                if isNiki == "I know your phone glitched or something. This would never happen to you."
+                <br />
+                <br />
+                if notNiki == "YOU'RE STUPID! GIVE UP!"
+              </div>
             </div>
           </Modal>
+          <WelcomeModal
+            open={showWelcome}
+            onClose={() => setShowWelcome(false)}
+          />
         </div>
 
         <div className="grid grid-cols-5 gap-2">

@@ -15,31 +15,31 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ open, onClose, difficulty, 
     switch (difficulty) {
       case 'easy':
         return {
-          emoji: '😊',
-          title: 'Easy Victory!',
-          message: 'Great start! You\'ve mastered the basics.',
-          subtitle: 'Ready for a bigger challenge?'
+          emoji: '🤨',
+          title: 'Too easy!',
+          message: 'You\'re better than this.',
+          subtitle: 'Assuming you were just in a hurry.'
         };
       case 'medium':
         return {
-          emoji: '🎯',
-          title: 'Medium Mastery!',
-          message: 'Well done! You\'re getting the hang of this.',
-          subtitle: 'Your skills are growing!'
+          emoji: '🙂',
+          title: 'Not bad!',
+          message: 'Solid work, depending on your time.',
+          subtitle: 'Time to move up.'
         };
       case 'hard':
         return {
           emoji: '🔥',
-          title: 'Hard Challenge Conquered!',
-          message: 'Impressive! You\'ve tackled a tough puzzle.',
-          subtitle: 'You\'re becoming a Sudoku expert!'
+          title: 'Damn!',
+          message: 'You\'re starting to cook',
+          subtitle: 'Ready to move up again?'
         };
       case 'extreme':
         return {
           emoji: '👑',
-          title: 'Extreme Victory!',
-          message: 'Incredible! You\'ve conquered the ultimate challenge.',
-          subtitle: 'You are a Sudoku master!'
+          title: 'You\'re Goated',
+          message: 'If you\'re reading this, I\'m creating harder puzzles.',
+          subtitle: 'You are #that guy.'
         };
       default:
         return {
@@ -58,11 +58,6 @@ const VictoryModal: React.FC<VictoryModalProps> = ({ open, onClose, difficulty, 
       open={open}
       onClose={onClose}
       buttonText="Start Again"
-      buttonIcon={
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-          <path d="M12 2v3M12 19v3M5 12H2M21 12h3M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636M18.364 5.636l-1.414 1.414M7.05 16.95L5.636 18.364"/>
-        </svg>
-      }
     >
       <div className="text-center">
         <div className="text-4xl mb-2">{content.emoji}</div>
