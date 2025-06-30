@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Infinite-Sudoku/sw.js', { scope: '/Infinite-Sudoku/' })})}
