@@ -23,6 +23,10 @@ function App() {
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [pauseStartTime, setPauseStartTime] = useState<number | null>(null);
   const [showWelcome, setShowWelcome] = useState<boolean>(true);
+  const [solutionGrid, setSolutionGrid] = useState<Grid>(Array(9).fill(null).map(() => Array(9).fill(0)));
+  const [wrongInputCell, setWrongInputCell] = useState<CellPosition>(null);
+  const [notesMode, setNotesMode] = useState<boolean>(false);
+  const [notes, setNotes] = useState<number[][][]>(Array(9).fill(null).map(() => Array(9).fill(null).map(() => [])));
 
   // Check for conflicts in current grid state
   const findConflicts = (grid: Grid): Set<string> => {
@@ -241,9 +245,10 @@ function App() {
   };
 
   const newGame = useCallback(() => {
-    const { puzzle } = generatePuzzle(difficulty);
+    const { puzzle, solution } = generatePuzzle(difficulty);
     setGrid(puzzle);
     setInitialGrid(puzzle.map(row => [...row]));
+    setSolutionGrid(solution.map(row => [...row]));
     setIsComplete(false);
     setIsGameOver(false);
     setSelectedCell(null);
@@ -253,6 +258,8 @@ function App() {
     setElapsedTime(0);
     setIsPaused(false);
     setPauseStartTime(null);
+    setWrongInputCell(null);
+    setNotes(Array(9).fill(null).map(() => Array(9).fill(null).map(() => [])));
   }, [difficulty]);
 
   const startNewGame = () => {
@@ -281,28 +288,53 @@ function App() {
     if (selectedCell && !isComplete && !isPaused && !isGameOver) {
       const { row, col } = selectedCell;
       if (initialGrid[row][col] === 0) {
+        if (notesMode) {
+          // Toggle note
+          setNotes(prevNotes => {
+            const newNotes = prevNotes.map(r => r.map(c => [...c]));
+            const idx = newNotes[row][col].indexOf(num);
+            if (idx === -1) {
+              newNotes[row][col].push(num);
+              newNotes[row][col].sort();
+            } else {
+              newNotes[row][col].splice(idx, 1);
+            }
+            return newNotes;
+          });
+          return;
+        }
         const newGrid = [...grid];
         newGrid[row][col] = num;
         setGrid(newGrid);
-        
+        setWrongInputCell(null);
+        // Clear notes for this cell
+        setNotes(prevNotes => {
+          const newNotes = prevNotes.map(r => r.map(c => [...c]));
+          newNotes[row][col] = [];
+          return newNotes;
+        });
         // Check if this creates a conflict (mistake)
         const newConflicts = findConflicts(newGrid);
         const hadConflict = conflicts.has(`${row}-${col}`);
         const hasConflict = newConflicts.has(`${row}-${col}`);
-        
+        let madeMistake = false;
         // If this cell now has a conflict and didn't before, it's a new mistake
         if (hasConflict && !hadConflict) {
+          madeMistake = true;
+        }
+        // Autocheck for hard/extreme: if input is wrong (not matching solution), count as mistake
+        if ((difficulty === 'hard' || difficulty === 'extreme') && solutionGrid[row][col] !== 0 && num !== solutionGrid[row][col]) {
+          madeMistake = true;
+          setWrongInputCell({ row, col });
+        }
+        if (madeMistake) {
           const newMistakeCount = mistakes + 1;
           setMistakes(newMistakeCount);
-          
-          // Check if game over
           if (newMistakeCount >= 3) {
             setIsGameOver(true);
           }
         }
-        
         setConflicts(newConflicts);
-        
         // Check if puzzle is complete
         if (newConflicts.size === 0 && newGrid.every(row => row.every(cell => cell !== 0))) {
           setIsComplete(true);
@@ -318,10 +350,13 @@ function App() {
         const newGrid = [...grid];
         newGrid[row][col] = 0;
         setGrid(newGrid);
-        
         // Update conflicts
         const newConflicts = findConflicts(newGrid);
         setConflicts(newConflicts);
+        // Clear wrong input highlight if this cell was wrong
+        if (wrongInputCell && wrongInputCell.row === row && wrongInputCell.col === col) {
+          setWrongInputCell(null);
+        }
       }
     }
   };
@@ -461,12 +496,25 @@ function App() {
         </div>
 
         <div className="relative mb-8">
+          {/* Notes toggle button above the grid, right-aligned */}
+          <div style={{ position: 'absolute', top: '-2.2rem', right: 0, zIndex: 10 }}>
+            <button
+              onClick={() => setNotesMode(n => !n)}
+              className={`px-2 py-1 rounded text-xs font-medium border border-blue-200 bg-white/80 hover:bg-blue-50 transition-all duration-200 ${notesMode ? 'text-blue-600 border-blue-400 bg-blue-100/80' : 'text-slate-500'}`}
+              aria-pressed={notesMode}
+              title="Toggle notes mode"
+            >
+              Notes: {notesMode ? 'On' : 'Off'}
+            </button>
+          </div>
           <Board
             grid={grid}
             initialGrid={initialGrid}
             conflicts={conflicts}
             selectedCell={selectedCell}
             handleCellClick={handleCellClick}
+            wrongInputCell={wrongInputCell}
+            notes={notes}
           />
           <VictoryModal
             open={isComplete}

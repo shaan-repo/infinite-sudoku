@@ -11,9 +11,11 @@ interface BoardProps {
   conflicts: Set<string>;
   selectedCell: CellPosition;
   handleCellClick: (row: number, col: number) => void;
+  wrongInputCell?: CellPosition;
+  notes?: number[][][];
 }
 
-const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCell, handleCellClick }) => {
+const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCell, handleCellClick, wrongInputCell, notes }) => {
   // Calculate which cells should be highlighted
   const getHighlightedCells = (): Set<string> => {
     const highlightedCells = new Set<string>();
@@ -90,6 +92,8 @@ const Board: React.FC<BoardProps> = ({ grid, initialGrid, conflicts, selectedCel
               isInitial={isInitial}
               onClick={() => handleCellClick(rowIndex, colIndex)}
               borderClass={borderClass}
+              isWrongInput={wrongInputCell?.row === rowIndex && wrongInputCell?.col === colIndex}
+              notes={notes ? notes[rowIndex][colIndex] : []}
             />
           );
         })
