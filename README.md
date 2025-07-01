@@ -1,12 +1,12 @@
 # Infinite Sudoku
 
-A minimalist, ad-free Sudoku app you can play forever. Built with React, TypeScript, and Tailwind CSS.
+A minimalist, ad-free Sudoku app. Built with React, TypeScript, and Tailwind CSS.
 
-## 🎮 Live Demo
+## Play Now
 
 **[Play Infinite Sudoku](https://shaan-repo.github.io/infinite-sudoku/)**
 
-## ✨ Features
+## Features
 
 - **Infinite Puzzles** - Generate new puzzles instantly with varying difficulty levels
 - **Smart Conflict Detection** - Real-time highlighting of row, column, and box conflicts
@@ -17,16 +17,30 @@ A minimalist, ad-free Sudoku app you can play forever. Built with React, TypeScr
 - **Offline Play** - Works without internet connection
 - **Zero Ads** - Clean, distraction-free experience
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **React 19** - Modern React with hooks
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and dev server
-- **Tailwind CSS** - Utility-first CSS framework
-- **PWA** - Progressive Web App with service worker
-- **GitHub Pages** - Free hosting
+- **React 19**
+- **TypeScript** 
+- **Vite** 
+- **Tailwind CSS** 
+- **PWA** 
+- **GitHub Pages** 
 
-## 🚀 Getting Started
+## How to Play
+
+1. **Select Difficulty** - Choose from Easy, Medium, Hard, or Extreme
+2. **Click "New Game"** - Generate a fresh puzzle
+3. **Fill the Grid** - Click empty cells and enter numbers 1-9
+4. **Watch for Conflicts** - Red highlighting shows invalid moves
+5. **Complete the Puzzle** - Fill all cells without conflicts to win!
+
+## 📱 PWA Installation
+
+- **Mobile**: Open the site in Safari and tap "Add to Home Screen"
+- **Desktop**: Click the install icon in your browser's address bar
+- **Offline**: Once installed, the app works without internet
+
+## If you want it for some reason
 
 ### Prerequisites
 - Node.js (v18 or higher)
@@ -60,28 +74,10 @@ A minimalist, ad-free Sudoku app you can play forever. Built with React, TypeScr
    pnpm deploy
    ```
 
-## 🎯 How to Play
-
-1. **Select Difficulty** - Choose from Easy, Medium, Hard, or Extreme
-2. **Click "New Game"** - Generate a fresh puzzle
-3. **Fill the Grid** - Click empty cells and enter numbers 1-9
-4. **Watch for Conflicts** - Red highlighting shows invalid moves
-5. **Complete the Puzzle** - Fill all cells without conflicts to win!
-
-## 📱 PWA Installation
-
-- **Mobile**: Open the site in Safari/Chrome and tap "Add to Home Screen"
-- **Desktop**: Click the install icon in your browser's address bar
-- **Offline**: Once installed, the app works without internet
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to open issues or submit pull requests.
-
 ## 📄 License
 
 This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-**Enjoy playing Infinite Sudoku! 🧩**
+**Enjoy Infinite Sudoku! 🧩**
