@@ -47,10 +47,10 @@ const Cell: React.FC<CellProps> = ({ value, isSelected, isInitialSelected, isCon
         <span className={`${isInitial ? 'font-semibold' : 'font-medium'}`}>{value}</span>
       )}
       {value === 0 && notes.length > 0 && (
-        <div className="absolute inset-0 flex flex-col justify-center items-center pointer-events-none select-none">
-          <div className="grid grid-cols-3 grid-rows-3 w-full h-full text-[0.55rem] text-slate-400 font-normal">
+        <div className="absolute inset-0 flex flex-col justify-center items-center pointer-events-none select-none p-[2px]">
+          <div className="grid grid-cols-3 grid-rows-3 w-[85%] h-[85%] text-[0.5rem] text-slate-400 font-normal">
             {Array.from({ length: 9 }, (_, i) => (
-              <div key={i} className="flex items-center justify-center min-h-[10px] min-w-[10px]">
+              <div key={i} className="flex items-center justify-center min-h-[8px] min-w-[8px]">
                 {notes.includes(i + 1) ? i + 1 : ''}
               </div>
             ))}

@@ -497,7 +497,7 @@ function App() {
 
         <div className="relative mb-8">
           {/* Notes toggle button above the grid, right-aligned */}
-          <div style={{ position: 'absolute', top: '-2.2rem', right: 0, zIndex: 10 }}>
+          <div style={{ position: 'absolute', top: '-1.7rem', right: 0, zIndex: 10 }}>
             <button
               onClick={() => setNotesMode(n => !n)}
               className={`px-2 py-1 rounded text-xs font-medium border border-blue-200 bg-white/80 hover:bg-blue-50 transition-all duration-200 ${notesMode ? 'text-blue-600 border-blue-400 bg-blue-100/80' : 'text-slate-500'}`}
